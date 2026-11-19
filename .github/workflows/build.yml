@@ -28,9 +28,9 @@ jobs:
           wget -q https://github.com
           tar -xzf Clang-14.0.6-20230502.tar.gz
           rm -f Clang-14.0.6-20230502.tar.gz
-          cd ..
-          git clone --depth=1 https://github.com gcc64
-          git clone --depth=1 https://github.com gcc32
+          cd ../..
+          git clone --depth=1 https://github.com toolchain/gcc64
+          git clone --depth=1 https://github.com toolchain/gcc32
 
       - name: Compile Kernel
         run: |
@@ -47,7 +47,7 @@ jobs:
 
       - name: Package AnyKernel3
         run: |
-          git clone --depth=1 https://github.com
+          git clone --depth=1 https://github.com AnyKernel3
           rm -rf AnyKernel3/.git*
           sed -i 's/do.devicecheck=1/do.devicecheck=0/g' AnyKernel3/anykernel.sh
           sed -i 's/block=\/dev\/block\/platform\/omap\/omap_hsmmc.0\/by-name\/boot;/block=auto;/g' AnyKernel3/anykernel.sh
