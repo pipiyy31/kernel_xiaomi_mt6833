@@ -23,12 +23,7 @@ jobs:
 
       - name: Setup Clang & GCC
         run: |
-          mkdir -p toolchain/clang
-          cd toolchain/clang
-          wget -q https://github.com
-          tar -xzf Clang-14.0.6-20230502.tar.gz
-          rm -f Clang-14.0.6-20230502.tar.gz
-          cd ../..
+          git clone --depth=1 https://github.com toolchain/clang
           git clone --depth=1 https://github.com toolchain/gcc64
           git clone --depth=1 https://github.com toolchain/gcc32
 
