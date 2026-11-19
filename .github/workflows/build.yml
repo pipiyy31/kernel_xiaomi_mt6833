@@ -1,0 +1,65 @@
+name: Build Kernel 4.14.357 OC
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - flyme
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Install Build Tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ccache curl flex git libncurses5-dev libssl-dev libxml2-utils lzop python3 wget zip zstd device-tree-compiler
+
+      - name: Setup Clang & GCC
+        run: |
+          mkdir -p toolchain/clang
+          cd toolchain/clang
+          wget -q https://github.com
+          tar -xzf Clang-14.0.6-20230502.tar.gz
+          rm -f Clang-14.0.6-20230502.tar.gz
+          cd ..
+          git clone --depth=1 https://github.com gcc64
+          git clone --depth=1 https://github.com gcc32
+
+      - name: Compile Kernel
+        run: |
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export PATH="$PWD/toolchain/clang/bin:$PWD/toolchain/gcc64/bin:$PWD/toolchain/gcc32/bin:$PATH"
+          
+          make O=out ARCH=arm64 camellia_defconfig
+          make -j$(nproc) O=out ARCH=arm64 \
+            CC=clang \
+            CLANG_TRIPLE=aarch64-linux-gnu- \
+            CROSS_COMPILE=aarch64-linux-android- \
+            CROSS_COMPILE_ARM32=arm-linux-androideabi-
+
+      - name: Package AnyKernel3
+        run: |
+          git clone --depth=1 https://github.com
+          rm -rf AnyKernel3/.git*
+          sed -i 's/do.devicecheck=1/do.devicecheck=0/g' AnyKernel3/anykernel.sh
+          sed -i 's/block=\/dev\/block\/platform\/omap\/omap_hsmmc.0\/by-name\/boot;/block=auto;/g' AnyKernel3/anykernel.sh
+          sed -i 's/is_slot_device=0;/is_slot_device=1;/g' AnyKernel3/anykernel.sh
+          
+          cp out/arch/arm64/boot/Image.gz* AnyKernel3/
+          [ -f out/arch/arm64/boot/dtb.img ] && cp out/arch/arm64/boot/dtb.img AnyKernel3/
+          [ -f out/arch/arm64/boot/dtbo.img ] && cp out/arch/arm64/boot/dtbo.img AnyKernel3/
+          cd AnyKernel3 && zip -r9 ../Camellia-4.14.357-OC.zip *
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Camellia-4.14.357-OC
+          path: Camellia-4.14.357-OC.zip
